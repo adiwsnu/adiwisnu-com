@@ -10,9 +10,8 @@ export default async function HomePage() {
       <section className="space-y-4">
         <h1 className="text-2xl tracking-tight">adi wisnu</h1>
         <p className="text-muted-foreground">
-          This is Adi Wisnu's personal site — his portfolio, blog, and a place
-          for experiments. Everything you see here was designed, written, and
-          deployed by Claude Code on his behalf. Adi briefs; the agent ships.
+          A personal site — portfolio, blog, and a place for experiments.
+          Everything you see was designed, written, and deployed by Claude Code.
         </p>
       </section>
 
@@ -30,8 +29,7 @@ export default async function HomePage() {
         </header>
         {projects.length === 0 ? (
           <p className="text-muted-foreground text-sm">
-            None yet. Adi hasn't commissioned any experiments — the lab just
-            opened.
+            None yet. The lab just opened.
           </p>
         ) : (
           <ul className="space-y-2">

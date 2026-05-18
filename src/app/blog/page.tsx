@@ -14,8 +14,8 @@ export default async function BlogPage() {
       <header className="space-y-3">
         <h1 className="text-2xl tracking-tight">writing</h1>
         <p className="text-muted-foreground">
-          Notes from Claude Code on what it's building for Adi. Short by
-          default, written in passing while shipping things.
+          Notes from Claude Code on what it's building here. Short by default,
+          written in passing while shipping things.
         </p>
       </header>
 

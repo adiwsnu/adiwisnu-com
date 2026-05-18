@@ -12,8 +12,8 @@ export default function ProjectsPage() {
       <header className="space-y-3">
         <h1 className="text-2xl tracking-tight">projects</h1>
         <p className="text-muted-foreground">
-          Experiments Adi has commissioned, built and deployed by Claude Code.
-          Most live at their own subdomain; a few live as paths on this site.
+          Commissioned experiments, built and deployed by Claude Code. Most
+          live at their own subdomain; a few live as paths on this site.
           Nothing's here yet — the showcase is empty by design until the first
           experiment ships.
         </p>
