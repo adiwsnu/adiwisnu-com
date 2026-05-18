@@ -13,6 +13,16 @@ const MONTHS = [
   "december",
 ];
 
+const WEEKDAYS = [
+  "Sunday",
+  "Monday",
+  "Tuesday",
+  "Wednesday",
+  "Thursday",
+  "Friday",
+  "Saturday",
+];
+
 export function monthName(m: number): string {
   return MONTHS[m - 1] ?? "";
 }
@@ -40,6 +50,20 @@ export function parseDateSlug(
   return date;
 }
 
+/** Parse "HH-MM" or "HH:MM" → { h, m } or null. */
+export function parseTimeQuery(t: string | undefined): {
+  h: number;
+  m: number;
+} | null {
+  if (!t) return null;
+  const match = /^(\d{1,2})[-:](\d{2})$/.exec(t);
+  if (!match) return null;
+  const h = Number(match[1]);
+  const m = Number(match[2]);
+  if (h < 0 || h > 23 || m < 0 || m > 59) return null;
+  return { h, m };
+}
+
 export function formatDateSlug(date: Date): { date: string; year: string } {
   const day = date.getUTCDate();
   const month = monthName(date.getUTCMonth() + 1);
@@ -55,10 +79,14 @@ export function isoToSlugPath(iso: string): string | null {
   return `/days/${day}-${month}/${year}`;
 }
 
-export function formatHuman(date: Date): string {
-  return `${date.getUTCDate()} ${
+export function formatHuman(date: Date, withTime = false): string {
+  const base = `${date.getUTCDate()} ${
     monthName(date.getUTCMonth() + 1).replace(/^./, (c) => c.toUpperCase())
   } ${date.getUTCFullYear()}`;
+  if (!withTime) return base;
+  const hh = String(date.getUTCHours()).padStart(2, "0");
+  const mm = String(date.getUTCMinutes()).padStart(2, "0");
+  return `${base}, ${hh}:${mm} UTC`;
 }
 
 export type Delta = {
@@ -82,4 +110,58 @@ export function formatDelta(target: Date, now: Date): Delta {
   ms -= minutes * 60_000;
   const seconds = Math.floor(ms / 1_000);
   return { direction, days, hours, minutes, seconds, totalMs: Math.abs(diff) };
+}
+
+export function isLeapYear(year: number): boolean {
+  return (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0;
+}
+
+export function dayOfYear(date: Date): number {
+  const start = Date.UTC(date.getUTCFullYear(), 0, 0);
+  return Math.floor((date.getTime() - start) / 86_400_000);
+}
+
+export function isoWeek(date: Date): { week: number; year: number } {
+  // ISO 8601 week date: week containing the year's first Thursday.
+  const d = new Date(
+    Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()),
+  );
+  const dayNum = d.getUTCDay() || 7;
+  d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  const week = Math.ceil(((d.getTime() - yearStart.getTime()) / 86_400_000 + 1) / 7);
+  return { week, year: d.getUTCFullYear() };
+}
+
+export function weekdayName(date: Date): string {
+  return WEEKDAYS[date.getUTCDay()];
+}
+
+export function quarterOf(date: Date): number {
+  return Math.floor(date.getUTCMonth() / 3) + 1;
+}
+
+export function daysInYear(year: number): number {
+  return isLeapYear(year) ? 366 : 365;
+}
+
+/** Calendar-aware breakdown: years / months / days between two dates. */
+export function calendarBreakdown(a: Date, b: Date) {
+  const earlier = a.getTime() <= b.getTime() ? a : b;
+  const later = a.getTime() <= b.getTime() ? b : a;
+  let years = later.getUTCFullYear() - earlier.getUTCFullYear();
+  let months = later.getUTCMonth() - earlier.getUTCMonth();
+  let days = later.getUTCDate() - earlier.getUTCDate();
+  if (days < 0) {
+    months -= 1;
+    const borrowedMonth = new Date(
+      Date.UTC(later.getUTCFullYear(), later.getUTCMonth(), 0),
+    );
+    days += borrowedMonth.getUTCDate();
+  }
+  if (months < 0) {
+    years -= 1;
+    months += 12;
+  }
+  return { years, months, days };
 }
