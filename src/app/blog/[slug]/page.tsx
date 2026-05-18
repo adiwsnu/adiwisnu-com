@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { MDXRemote } from "next-mdx-remote/rsc";
-import { getAllPosts, getPost } from "@/lib/posts";
+import { formatPostDate, getAllPosts, getPost } from "@/lib/posts";
+import { AuthorChip } from "@/components/author-chip";
 
 type Props = { params: Promise<{ slug: string }> };
 
@@ -28,8 +29,13 @@ export default async function PostPage({ params }: Props) {
 
   return (
     <article className="space-y-10">
-      <header className="space-y-2">
-        <p className="text-xs text-muted-foreground">{post.date}</p>
+      <header className="space-y-3">
+        <div className="flex items-center gap-3">
+          <p className="text-xs text-muted-foreground">
+            {formatPostDate(post.date)}
+          </p>
+          <AuthorChip author={post.author} />
+        </div>
         <h1 className="text-2xl tracking-tight">{post.title}</h1>
         {post.description ? (
           <p className="text-muted-foreground">{post.description}</p>

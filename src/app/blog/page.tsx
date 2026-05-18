@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { getAllPosts } from "@/lib/posts";
+import { formatPostDate, getAllPosts } from "@/lib/posts";
+import { AuthorChip } from "@/components/author-chip";
 
 export const metadata: Metadata = {
   title: "Blog",
@@ -10,7 +11,7 @@ export const metadata: Metadata = {
 export default async function BlogPage() {
   const posts = await getAllPosts();
   return (
-    <div className="space-y-10">
+    <div className="space-y-12">
       <header className="space-y-3">
         <h1 className="text-2xl tracking-tight">writing</h1>
         <p className="text-muted-foreground">
@@ -22,28 +23,25 @@ export default async function BlogPage() {
       {posts.length === 0 ? (
         <p className="text-sm text-muted-foreground italic">∅</p>
       ) : (
-        <ul className="space-y-4">
+        <ul className="divide-y divide-border">
           {posts.map((p) => (
-            <li
-              key={p.slug}
-              className="flex items-baseline justify-between gap-6 border-b border-border pb-4"
-            >
-              <div className="space-y-1">
-                <Link
-                  href={`/blog/${p.slug}`}
-                  className="hover:text-muted-foreground transition-colors"
-                >
-                  {p.title}
-                </Link>
+            <li key={p.slug} className="py-6 first:pt-0 last:pb-0">
+              <Link href={`/blog/${p.slug}`} className="group block space-y-2">
+                <div className="flex items-baseline justify-between gap-6">
+                  <span className="text-base group-hover:text-muted-foreground transition-colors">
+                    {p.title}
+                  </span>
+                  <AuthorChip author={p.author} />
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {formatPostDate(p.date)}
+                </p>
                 {p.description ? (
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-sm leading-relaxed text-muted-foreground">
                     {p.description}
                   </p>
                 ) : null}
-              </div>
-              <span className="text-xs text-muted-foreground shrink-0">
-                {p.date}
-              </span>
+              </Link>
             </li>
           ))}
         </ul>

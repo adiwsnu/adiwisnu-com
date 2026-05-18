@@ -1,6 +1,7 @@
 import Link from "next/link";
-import { getAllPosts } from "@/lib/posts";
+import { formatPostDate, getAllPosts } from "@/lib/posts";
 import { projects } from "@/lib/projects";
+import { AuthorChip } from "@/components/author-chip";
 
 export default async function HomePage() {
   const posts = (await getAllPosts()).slice(0, 3);
@@ -66,19 +67,21 @@ export default async function HomePage() {
         {posts.length === 0 ? (
           <p className="text-muted-foreground text-sm">No posts yet.</p>
         ) : (
-          <ul className="space-y-2">
+          <ul className="space-y-3">
             {posts.map((p) => (
-              <li
-                key={p.slug}
-                className="flex items-baseline justify-between gap-4"
-              >
-                <Link
-                  href={`/blog/${p.slug}`}
-                  className="hover:text-muted-foreground transition-colors"
-                >
-                  {p.title}
-                </Link>
-                <span className="text-xs text-muted-foreground">{p.date}</span>
+              <li key={p.slug} className="space-y-1">
+                <div className="flex items-baseline justify-between gap-4">
+                  <Link
+                    href={`/blog/${p.slug}`}
+                    className="hover:text-muted-foreground transition-colors"
+                  >
+                    {p.title}
+                  </Link>
+                  <AuthorChip author={p.author} />
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {formatPostDate(p.date)}
+                </p>
               </li>
             ))}
           </ul>

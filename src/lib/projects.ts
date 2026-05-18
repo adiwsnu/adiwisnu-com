@@ -13,7 +13,7 @@ export const projects: Project[] = [
     slug: "days",
     title: "days",
     description:
-      "A live countdown to any date. Pick a date, get a ticker that counts down (or up, for past dates). Optional time-of-day target via ?t=HH-MM. Date-math form for \"N days/weeks/months/years from X\". Favourites stored in your browser.",
+      "Pick a date, get a live countdown. Past dates count up instead. Add or subtract days, weeks, months, or years to find a new date. Save favourites to your device.",
     url: "/days",
     year: "2026",
   },

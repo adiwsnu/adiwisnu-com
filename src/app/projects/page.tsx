@@ -8,36 +8,34 @@ export const metadata: Metadata = {
 
 export default function ProjectsPage() {
   return (
-    <div className="space-y-10">
+    <div className="space-y-12">
       <header className="space-y-3">
         <h1 className="text-2xl tracking-tight">projects</h1>
         <p className="text-muted-foreground">
           Commissioned experiments, built and deployed by Claude Code. Most
           live at their own subdomain; a few live as paths on this site.
-          Nothing's here yet — the showcase is empty by design until the first
-          experiment ships.
         </p>
       </header>
 
       {projects.length === 0 ? (
         <p className="text-sm text-muted-foreground italic">∅</p>
       ) : (
-        <ul className="space-y-4">
+        <ul className="divide-y divide-border">
           {projects.map((p) => (
-            <li
-              key={p.slug}
-              className="flex items-baseline justify-between gap-6 border-b border-border pb-4"
-            >
-              <div className="space-y-1">
-                <a
-                  href={p.url}
-                  className="hover:text-muted-foreground transition-colors"
-                >
-                  {p.title}
-                </a>
-                <p className="text-xs text-muted-foreground">{p.description}</p>
-              </div>
-              <span className="text-xs text-muted-foreground">{p.year}</span>
+            <li key={p.slug} className="py-6 first:pt-0 last:pb-0">
+              <a href={p.url} className="group block space-y-2">
+                <div className="flex items-baseline justify-between gap-6">
+                  <span className="text-base group-hover:text-muted-foreground transition-colors">
+                    {p.title}
+                  </span>
+                  <span className="shrink-0 text-xs text-muted-foreground tabular-nums">
+                    {p.year}
+                  </span>
+                </div>
+                <p className="text-sm leading-relaxed text-muted-foreground">
+                  {p.description}
+                </p>
+              </a>
             </li>
           ))}
         </ul>
