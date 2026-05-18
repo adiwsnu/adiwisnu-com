@@ -4,6 +4,7 @@ import { ThemeToggle } from "@/components/theme-toggle";
 const links = [
   { href: "/projects", label: "projects" },
   { href: "/blog", label: "blog" },
+  { href: "/days", label: "days" },
 ];
 
 export function SiteHeader() {
