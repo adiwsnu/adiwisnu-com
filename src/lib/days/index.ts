@@ -145,6 +145,45 @@ export function daysInYear(year: number): number {
   return isLeapYear(year) ? 366 : 365;
 }
 
+export type DurationUnit = "days" | "weeks" | "months" | "years";
+export type DurationDirection = "after" | "before";
+
+/**
+ * Add (or subtract) a whole number of days/weeks/months/years to a UTC date.
+ * Months/years use calendar arithmetic and clamp the day if the target month
+ * is shorter (e.g. Jan 31 + 1 month → Feb 28 in a non-leap year).
+ */
+export function addToDate(
+  start: Date,
+  amount: number,
+  unit: DurationUnit,
+  direction: DurationDirection,
+): Date {
+  const sign = direction === "after" ? 1 : -1;
+  const n = sign * amount;
+  const y = start.getUTCFullYear();
+  const m = start.getUTCMonth();
+  const d = start.getUTCDate();
+
+  if (unit === "days") {
+    return new Date(Date.UTC(y, m, d + n));
+  }
+  if (unit === "weeks") {
+    return new Date(Date.UTC(y, m, d + n * 7));
+  }
+  if (unit === "months") {
+    const targetMonth = m + n;
+    const targetYear = y + Math.floor(targetMonth / 12);
+    const normalMonth = ((targetMonth % 12) + 12) % 12;
+    const lastDay = new Date(Date.UTC(targetYear, normalMonth + 1, 0)).getUTCDate();
+    return new Date(Date.UTC(targetYear, normalMonth, Math.min(d, lastDay)));
+  }
+  // years
+  const targetYear = y + n;
+  const lastDay = new Date(Date.UTC(targetYear, m + 1, 0)).getUTCDate();
+  return new Date(Date.UTC(targetYear, m, Math.min(d, lastDay)));
+}
+
 /** Calendar-aware breakdown: years / months / days between two dates. */
 export function calendarBreakdown(a: Date, b: Date) {
   const earlier = a.getTime() <= b.getTime() ? a : b;
