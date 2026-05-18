@@ -16,10 +16,7 @@ type Props = {
   searchParams: Promise<{ t?: string }>;
 };
 
-export const dynamicParams = true;
-export function generateStaticParams() {
-  return [];
-}
+export const dynamic = "force-dynamic";
 
 /**
  * If no `?t=HH-MM` is given, treat the date as the *end* of the day in UTC
