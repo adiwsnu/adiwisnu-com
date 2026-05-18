@@ -36,21 +36,36 @@ const MONTHS = [
 ];
 
 /**
- * Format an ISO date (yyyy-mm-dd) as a Jakarta-time human label, e.g.
- * "Tuesday, 19 May 2026". Posts carry date-only strings, so this is just a
- * calendar mapping — no time-of-day or timezone is displayed.
+ * Normalize whatever gray-matter gave us for `date` into "yyyy-mm-dd".
+ * Unquoted YAML dates get parsed into Date objects; quoted ones come through
+ * as strings. Accept both, reject anything else.
+ */
+function normalizeDate(raw: unknown): string {
+  if (raw instanceof Date && !Number.isNaN(raw.getTime())) {
+    const y = raw.getUTCFullYear();
+    const m = String(raw.getUTCMonth() + 1).padStart(2, "0");
+    const d = String(raw.getUTCDate()).padStart(2, "0");
+    return `${y}-${m}-${d}`;
+  }
+  if (typeof raw === "string" && /^\d{4}-\d{2}-\d{2}/.test(raw)) {
+    return raw.slice(0, 10);
+  }
+  return "";
+}
+
+/**
+ * Format an ISO date (yyyy-mm-dd) as "Tuesday, 19 May 2026". Posts carry
+ * date-only values, so this is a pure calendar mapping — no time or
+ * timezone is shown.
  */
 export function formatPostDate(iso: string): string {
-  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso);
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso);
   if (!m) return iso;
   const year = Number(m[1]);
   const month = Number(m[2]);
   const day = Number(m[3]);
-  // Interpret the date in GMT+7 (Asia/Jakarta) — for a date-only value this
-  // collapses to the same calendar day, but we anchor at noon-Jakarta to be
-  // safe against any future locale changes.
-  const noonJakartaAsUtc = new Date(Date.UTC(year, month - 1, day, 5, 0, 0));
-  const weekday = WEEKDAYS[noonJakartaAsUtc.getUTCDay()];
+  const probe = new Date(Date.UTC(year, month - 1, day, 5, 0, 0));
+  const weekday = WEEKDAYS[probe.getUTCDay()];
   return `${weekday}, ${day} ${MONTHS[month - 1]} ${year}`;
 }
 
@@ -79,7 +94,7 @@ export async function getAllPosts(): Promise<PostMeta[]> {
       return {
         slug,
         title: String(data.title ?? slug),
-        date: String(data.date ?? ""),
+        date: normalizeDate(data.date),
         description: data.description ? String(data.description) : undefined,
         author: data.author ? String(data.author) : undefined,
       } satisfies PostMeta;
