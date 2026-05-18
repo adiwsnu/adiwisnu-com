@@ -1,18 +1,28 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import {
-  calendarBreakdown,
-  dayOfYear,
-  daysInYear,
   isLeapYear,
-  isoWeek,
-  quarterOf,
-  weekdayName,
+  localTargetInstant,
+  type DateParts,
 } from "@/lib/days";
 
 type Props = {
-  target: Date;
-  now: Date;
-  hasTime: boolean;
+  parts: DateParts;
+  time: { h: number; m: number } | null;
 };
+
+const WEEKDAYS = [
+  "Sunday",
+  "Monday",
+  "Tuesday",
+  "Wednesday",
+  "Thursday",
+  "Friday",
+  "Saturday",
+];
+
+const PLACEHOLDER = "—";
 
 function row(label: string, value: string) {
   return (
@@ -25,30 +35,116 @@ function row(label: string, value: string) {
   );
 }
 
-export function DateDetails({ target, now, hasTime }: Props) {
-  const year = target.getUTCFullYear();
-  const doy = dayOfYear(target);
-  const total = daysInYear(year);
-  const { week, year: weekYear } = isoWeek(target);
-  const quarter = quarterOf(target);
-  const breakdown = calendarBreakdown(target, now);
-  const breakdownDirection = target.getTime() >= now.getTime() ? "from now" : "ago";
+type Computed = {
+  weekday: string;
+  doy: number;
+  total: number;
+  isoWeek: number;
+  isoWeekYear: number;
+  quarter: number;
+  leap: boolean;
+  calendar: string;
+  totalDays: number;
+  totalWeeks: number;
+  totalHours: number;
+  totalMinutes: number;
+  totalSeconds: number;
+  unix: number;
+  interpreted: string;
+};
+
+function dayOfYearLocal(d: Date): number {
+  const start = new Date(d.getFullYear(), 0, 0).getTime();
+  return Math.floor((d.getTime() - start) / 86_400_000);
+}
+
+function isoWeekLocal(date: Date): { week: number; year: number } {
+  const d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  const dayNum = d.getDay() || 7;
+  d.setDate(d.getDate() + 4 - dayNum);
+  const yearStart = new Date(d.getFullYear(), 0, 1);
+  const week = Math.ceil(((d.getTime() - yearStart.getTime()) / 86_400_000 + 1) / 7);
+  return { week, year: d.getFullYear() };
+}
+
+function calendarBreakdownLocal(a: Date, b: Date) {
+  const earlier = a.getTime() <= b.getTime() ? a : b;
+  const later = a.getTime() <= b.getTime() ? b : a;
+  let years = later.getFullYear() - earlier.getFullYear();
+  let months = later.getMonth() - earlier.getMonth();
+  let days = later.getDate() - earlier.getDate();
+  if (days < 0) {
+    months -= 1;
+    const borrowed = new Date(later.getFullYear(), later.getMonth(), 0);
+    days += borrowed.getDate();
+  }
+  if (months < 0) {
+    years -= 1;
+    months += 12;
+  }
+  return { years, months, days };
+}
+
+function compute(parts: DateParts, time: Props["time"]): Computed {
+  const target = localTargetInstant(parts, time);
+  const now = new Date();
+
+  const weekday = WEEKDAYS[target.getDay()];
+  const doy = dayOfYearLocal(target);
+  const total = isLeapYear(target.getFullYear()) ? 366 : 365;
+  const { week, year: isoYear } = isoWeekLocal(target);
+  const quarter = Math.floor(target.getMonth() / 3) + 1;
+  const leap = isLeapYear(target.getFullYear());
+
+  const bd = calendarBreakdownLocal(target, now);
+  const dir = target.getTime() >= now.getTime() ? "from now" : "ago";
+  const parts2: string[] = [];
+  if (bd.years) parts2.push(`${bd.years} year${bd.years === 1 ? "" : "s"}`);
+  if (bd.months) parts2.push(`${bd.months} month${bd.months === 1 ? "" : "s"}`);
+  if (bd.days || !parts2.length)
+    parts2.push(`${bd.days} day${bd.days === 1 ? "" : "s"}`);
+  const calendar = `${parts2.join(", ")} ${dir}`;
+
   const totalMs = Math.abs(target.getTime() - now.getTime());
   const totalDays = Math.floor(totalMs / 86_400_000);
   const totalHours = Math.floor(totalMs / 3_600_000);
   const totalMinutes = Math.floor(totalMs / 60_000);
   const totalSeconds = Math.floor(totalMs / 1_000);
   const totalWeeks = Math.floor(totalDays / 7);
-  const unixSeconds = Math.floor(target.getTime() / 1000);
+  const unix = Math.floor(target.getTime() / 1000);
 
-  const parts: string[] = [];
-  if (breakdown.years) parts.push(`${breakdown.years} year${breakdown.years === 1 ? "" : "s"}`);
-  if (breakdown.months) parts.push(`${breakdown.months} month${breakdown.months === 1 ? "" : "s"}`);
-  if (breakdown.days || !parts.length)
-    parts.push(`${breakdown.days} day${breakdown.days === 1 ? "" : "s"}`);
-  const calendarString = `${parts.join(", ")} ${breakdownDirection}`;
+  const pad = (n: number) => n.toString().padStart(2, "0");
+  const interpreted = time
+    ? `${pad(time.h)}:${pad(time.m)} in your local time`
+    : "end of day in your local time";
 
-  const remainingInYear = total - doy;
+  return {
+    weekday,
+    doy,
+    total,
+    isoWeek: week,
+    isoWeekYear: isoYear,
+    quarter,
+    leap,
+    calendar,
+    totalDays,
+    totalWeeks,
+    totalHours,
+    totalMinutes,
+    totalSeconds,
+    unix,
+    interpreted,
+  };
+}
+
+export function DateDetails({ parts, time }: Props) {
+  const [c, setC] = useState<Computed | null>(null);
+
+  useEffect(() => {
+    setC(compute(parts, time));
+    const id = setInterval(() => setC(compute(parts, time)), 60_000);
+    return () => clearInterval(id);
+  }, [parts, time]);
 
   return (
     <section className="space-y-3">
@@ -56,28 +152,34 @@ export function DateDetails({ target, now, hasTime }: Props) {
         details
       </h2>
       <dl className="rounded-lg border border-border px-4 py-1">
-        {row("Day of the week", weekdayName(target))}
-        {row("Day of the year", `${doy} of ${total}`)}
+        {row("Day of the week", c?.weekday ?? PLACEHOLDER)}
+        {row(
+          "Day of the year",
+          c ? `${c.doy} of ${c.total}` : PLACEHOLDER,
+        )}
         {row(
           "Remaining in the year",
-          `${remainingInYear} day${remainingInYear === 1 ? "" : "s"}`,
+          c
+            ? `${c.total - c.doy} day${c.total - c.doy === 1 ? "" : "s"}`
+            : PLACEHOLDER,
         )}
-        {row("ISO week", `Week ${week} of ${weekYear}`)}
-        {row("Calendar quarter", `Q${quarter} ${year}`)}
-        {row("Leap year", isLeapYear(year) ? "yes" : "no")}
-        {row("Calendar distance", calendarString)}
-        {row("In days", totalDays.toLocaleString())}
-        {row("In weeks", totalWeeks.toLocaleString())}
-        {row("In hours", totalHours.toLocaleString())}
-        {row("In minutes", totalMinutes.toLocaleString())}
-        {row("In seconds", totalSeconds.toLocaleString())}
-        {row("Unix timestamp", unixSeconds.toLocaleString())}
         {row(
-          "Interpreted as",
-          hasTime
-            ? `${target.toISOString().slice(0, 16).replace("T", " ")} UTC`
-            : `${target.toISOString().slice(0, 10)} (end of day UTC)`,
+          "ISO week",
+          c ? `Week ${c.isoWeek} of ${c.isoWeekYear}` : PLACEHOLDER,
         )}
+        {row(
+          "Calendar quarter",
+          c ? `Q${c.quarter} ${parts.year}` : PLACEHOLDER,
+        )}
+        {row("Leap year", c ? (c.leap ? "yes" : "no") : PLACEHOLDER)}
+        {row("Calendar distance", c?.calendar ?? PLACEHOLDER)}
+        {row("In days", c?.totalDays.toLocaleString() ?? PLACEHOLDER)}
+        {row("In weeks", c?.totalWeeks.toLocaleString() ?? PLACEHOLDER)}
+        {row("In hours", c?.totalHours.toLocaleString() ?? PLACEHOLDER)}
+        {row("In minutes", c?.totalMinutes.toLocaleString() ?? PLACEHOLDER)}
+        {row("In seconds", c?.totalSeconds.toLocaleString() ?? PLACEHOLDER)}
+        {row("Unix timestamp", c?.unix.toLocaleString() ?? PLACEHOLDER)}
+        {row("Interpreted as", c?.interpreted ?? PLACEHOLDER)}
       </dl>
     </section>
   );

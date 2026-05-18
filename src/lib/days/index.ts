@@ -27,10 +27,12 @@ export function monthName(m: number): string {
   return MONTHS[m - 1] ?? "";
 }
 
-export function parseDateSlug(
+export type DateParts = { year: number; month: number; day: number };
+
+export function parseDateSlugParts(
   dateSegment: string,
   yearSegment: string,
-): Date | null {
+): DateParts | null {
   const m = /^(\d{1,2})-([a-z]+)$/i.exec(dateSegment);
   if (!m) return null;
   const day = Number(m[1]);
@@ -39,15 +41,58 @@ export function parseDateSlug(
   if (!/^\d{4}$/.test(yearSegment)) return null;
   const year = Number(yearSegment);
   if (year < 1900 || year > 9999) return null;
-  const date = new Date(Date.UTC(year, monthIdx, day));
+  // Validate via UTC reconstruction — calendar-day-only, no TZ implied.
+  const probe = new Date(Date.UTC(year, monthIdx, day));
   if (
-    date.getUTCFullYear() !== year ||
-    date.getUTCMonth() !== monthIdx ||
-    date.getUTCDate() !== day
+    probe.getUTCFullYear() !== year ||
+    probe.getUTCMonth() !== monthIdx ||
+    probe.getUTCDate() !== day
   ) {
     return null;
   }
-  return date;
+  return { year, month: monthIdx + 1, day };
+}
+
+export function parseDateSlug(
+  dateSegment: string,
+  yearSegment: string,
+): Date | null {
+  const parts = parseDateSlugParts(dateSegment, yearSegment);
+  if (!parts) return null;
+  return new Date(Date.UTC(parts.year, parts.month - 1, parts.day));
+}
+
+/**
+ * Build the visitor-local target instant for a date (and optional time).
+ *
+ * Without a time, anchors to 23:59:59.999 of the chosen calendar day in the
+ * visitor's local timezone — so "until 22 July 2025" rolls over at the
+ * visitor's local midnight, not UTC midnight. With a time, anchors to that
+ * exact local hh:mm.
+ *
+ * This MUST be called on the client. The local timezone is whatever the
+ * browser reports.
+ */
+export function localTargetInstant(
+  parts: DateParts,
+  time: { h: number; m: number } | null,
+): Date {
+  if (time) {
+    return new Date(parts.year, parts.month - 1, parts.day, time.h, time.m, 0, 0);
+  }
+  return new Date(parts.year, parts.month - 1, parts.day, 23, 59, 59, 999);
+}
+
+export function formatHumanParts(
+  parts: DateParts,
+  time?: { h: number; m: number } | null,
+): string {
+  const month = monthName(parts.month).replace(/^./, (c) => c.toUpperCase());
+  const base = `${parts.day} ${month} ${parts.year}`;
+  if (!time) return base;
+  const hh = String(time.h).padStart(2, "0");
+  const mm = String(time.m).padStart(2, "0");
+  return `${base}, ${hh}:${mm}`;
 }
 
 /** Parse "HH-MM" or "HH:MM" → { h, m } or null. */

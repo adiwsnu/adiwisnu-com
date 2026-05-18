@@ -1,39 +1,59 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { formatDelta, type Delta } from "@/lib/days";
+import {
+  formatDelta,
+  localTargetInstant,
+  type DateParts,
+  type Delta,
+} from "@/lib/days";
 
 type Props = {
-  targetIso: string;
-  initial: Delta;
+  parts: DateParts;
+  time: { h: number; m: number } | null;
 };
 
 function pad(n: number) {
   return n.toString().padStart(2, "0");
 }
 
-export function CountdownTicker({ targetIso, initial }: Props) {
-  const [delta, setDelta] = useState<Delta>(initial);
+const PLACEHOLDER: Delta = {
+  direction: "until",
+  days: 0,
+  hours: 0,
+  minutes: 0,
+  seconds: 0,
+  totalMs: 0,
+};
+
+export function CountdownTicker({ parts, time }: Props) {
+  const [delta, setDelta] = useState<Delta>(PLACEHOLDER);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    const target = new Date(targetIso);
+    const target = localTargetInstant(parts, time);
     const tick = () => setDelta(formatDelta(target, new Date()));
     tick();
+    setMounted(true);
     const id = setInterval(tick, 1000);
     return () => clearInterval(id);
-  }, [targetIso]);
+  }, [parts, time]);
 
   const cells: { label: string; value: string }[] = [
-    { label: "days", value: delta.days.toLocaleString() },
-    { label: "hours", value: pad(delta.hours) },
-    { label: "minutes", value: pad(delta.minutes) },
-    { label: "seconds", value: pad(delta.seconds) },
+    { label: "days", value: mounted ? delta.days.toLocaleString() : "—" },
+    { label: "hours", value: mounted ? pad(delta.hours) : "—" },
+    { label: "minutes", value: mounted ? pad(delta.minutes) : "—" },
+    { label: "seconds", value: mounted ? pad(delta.seconds) : "—" },
   ];
 
   return (
     <div className="space-y-3">
       <p className="text-xs uppercase tracking-widest text-muted-foreground">
-        {delta.direction === "until" ? "time remaining" : "time elapsed"}
+        {!mounted
+          ? "computing in your local time…"
+          : delta.direction === "until"
+            ? "time remaining"
+            : "time elapsed"}
       </p>
       <div className="grid grid-cols-4 gap-2 sm:gap-3">
         {cells.map((c) => (
