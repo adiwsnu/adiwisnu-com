@@ -17,4 +17,12 @@ export const projects: Project[] = [
     url: "/days",
     year: "2026",
   },
+  {
+    slug: "bookmarks",
+    title: "bookmarks",
+    description:
+      "Private bookmark manager. Paste a URL, get a scraped card with title, author, thumbnail, auto-tags, and an in-app reader for articles. Single-user, password-gated, no public signup.",
+    url: "https://bookmarks.adiwisnu.com",
+    year: "2026",
+  },
 ];
